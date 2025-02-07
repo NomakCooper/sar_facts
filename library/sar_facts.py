@@ -6,10 +6,9 @@
 
 from __future__ import annotations
 
-
 DOCUMENTATION = r"""
 ---
-module: sar_info
+module: sar_facts
 short_description: Collect system activity report (SAR) data for system performance monitoring.
 description:
   - Retrieves SAR data using the `sar` command from system logs.
@@ -17,11 +16,11 @@ description:
   - Returns performance metrics such as cpu utilization, memory usage, disk activity, and network statistics.
 options:
   date_start:
-    description: Start date for collecting SAR data (format DD/MM/YYYY).
+    description: Start date for collecting SAR data (format YYYY-MM-DD).
     required: false
     type: str
   date_end:
-    description: End date for collecting SAR data (format DD/MM/YYYY).
+    description: End date for collecting SAR data (format YYYY-MM-DD).
     required: false
     type: str
   time_start:
@@ -52,11 +51,11 @@ author:
 """
 
 EXAMPLES = r"""
-- name: Collect disk data for all partitions from 06/02/2025 to 07/02/2025
-  sar_info:
+- name: Collect disk data for all partitions from 2025-02-06 to 2025-02-07
+  sar_facts:
     type: "disk"
-    date_start: "06/02/2025"
-    date_end: "07/02/2025"
+    date_start: "2025-02-06"
+    date_end: "2025-02-07"
     partition: true
   register: sar_output
 
@@ -65,24 +64,24 @@ EXAMPLES = r"""
     await_values: "{{ ansible_facts.sar_data.disk | selectattr('DEV', 'equalto', 'centos-root') | map(attribute='await') | list }}"
 
 - name: Get cpu data between 08:00:00 and 12:00:00 for all stored days
-  sar_info:
+  sar_facts:
     type: "cpu"
     time_start: "08:00:00"
     time_end: "12:00:00"
 
-- name: Fetch memory usage data for 07/02/2025
-  sar_info:
+- name: Fetch memory usage data for 2025-02-07
+  sar_facts:
     type: "memory"
-    date_start: "07/02/2025"
+    date_start: "2025-02-07"
 
-- name: Get only average disk data for 06/02/2025
-  sar_info:
+- name: Get only average disk data for 2025-02-06
+  sar_facts:
     type: "disk"
-    date_start: "06/02/2025"
+    date_start: "2025-02-06"
     average: true
 
 - name: Retrieve system load average for today
-  sar_info:
+  sar_facts:
     type: "load"
 
 """
@@ -101,11 +100,11 @@ ansible_facts:
       sample:
         sar_data:
           disk:
-            - date: "06/02/2025"
+            - date: "2025-02-06"
               time: "05:40:01"
               DEV: "centos-root"
               await: "2.13"
-            - date: "06/02/2025"
+            - date: "2025-02-06"
               time: "05:50:01"
               DEV: "centos-root"
               await: "1.50"
@@ -120,17 +119,15 @@ import datetime
 SAR_LOG_PATHS = ["/var/log/sa/", "/var/log/sysstat/"]
 SAR_BIN_PATHS = ["/usr/bin/sar", "/usr/sbin/sar", "/bin/sar"]
 
-
 def locate_sar():
     for path in SAR_BIN_PATHS:
         if os.path.exists(path):
             return path
     return None
 
-
 def find_sar_file(date_str):
     try:
-        date_obj = datetime.datetime.strptime(date_str, "%d/%m/%Y")
+        date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d")
         day = date_obj.strftime("%d")
 
         for path in SAR_LOG_PATHS:
@@ -142,7 +139,6 @@ def find_sar_file(date_str):
         return None
 
     return None
-
 
 def run_sar_command(module, sar_bin, sar_file, sar_type, time_start, time_end, partition, average, date_str):
     command = [sar_bin, "-f", sar_file]
@@ -169,7 +165,6 @@ def run_sar_command(module, sar_bin, sar_file, sar_type, time_start, time_end, p
         return parse_sar_output(result.stdout, sar_type, average, date_str)
     except subprocess.CalledProcessError as e:
         module.fail_json(msg=f"Failed to execute SAR command: {str(e)}")
-
 
 def parse_sar_output(output, sar_type, average, date_str):
     sar_data = []
@@ -226,7 +221,6 @@ def parse_sar_output(output, sar_type, average, date_str):
 
     return sar_data
 
-
 def main():
     module_args = dict(
         date_start=dict(type="str", required=False, default=None),
@@ -251,16 +245,38 @@ def main():
 
     sar_data = []
 
-    for date in [date_start, date_end] if date_start == date_end else [
-        (datetime.datetime.strptime(date_start, "%d/%m/%Y") + datetime.timedelta(days=i)).strftime("%d/%m/%Y")
-        for i in range((datetime.datetime.strptime(date_end, "%d/%m/%Y") - datetime.datetime.strptime(date_start, "%d/%m/%Y")).days + 1)
-    ]:
+    # Ensure valid date format
+    if date_start:
+        try:
+            date_start = datetime.datetime.strptime(date_start, "%Y-%m-%d").strftime("%Y-%m-%d")
+        except ValueError:
+            module.fail_json(msg="Invalid date_start format. Use YYYY-MM-DD.")
+
+    if date_end:
+        try:
+            date_end = datetime.datetime.strptime(date_end, "%Y-%m-%d").strftime("%Y-%m-%d")
+        except ValueError:
+            module.fail_json(msg="Invalid date_end format. Use YYYY-MM-DD.")
+
+    date_list = []
+    if date_start and date_end:
+        start_date = datetime.datetime.strptime(date_start, "%Y-%m-%d")
+        end_date = datetime.datetime.strptime(date_end, "%Y-%m-%d")
+        delta = (end_date - start_date).days
+
+        if delta < 0:
+            module.fail_json(msg="date_end cannot be before date_start.")
+
+        date_list = [(start_date + datetime.timedelta(days=i)).strftime("%Y-%m-%d") for i in range(delta + 1)]
+    else:
+        date_list = [date_start] if date_start else []
+
+    for date in date_list:
         sar_file = find_sar_file(date)
         if sar_file:
             sar_data.extend(run_sar_command(module, locate_sar(), sar_file, sar_type, time_start, time_end, partition, average, date))
 
-    module.exit_json(changed=False, ansible_facts={"sar_data": {sar_type: sar_data}})
-
+    module.exit_json(changed=False, ansible_facts={"sar_data": {sar_type: sar_data if sar_data else []}})
 
 if __name__ == "__main__":
     main()
