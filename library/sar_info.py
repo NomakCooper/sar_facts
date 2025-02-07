@@ -14,7 +14,7 @@ short_description: Collect system activity report (SAR) data for system performa
 description:
   - Retrieves SAR data using the `sar` command from system logs.
   - Supports filtering by date range, time range, and partition details.
-  - Returns performance metrics such as CPU utilization, memory usage, disk activity, and network statistics.
+  - Returns performance metrics such as cpu utilization, memory usage, disk activity, and network statistics.
 options:
   date_start:
     description: Start date for collecting SAR data (format DD/MM/YYYY).
@@ -34,7 +34,7 @@ options:
     type: str
   type:
     description: Type of SAR data to retrieve.
-    choices: [ CPU, Memory, Swap, Network, Disk, Load ]
+    choices: [ cpu, memory, swap, network, disk, load ]
     required: true
     type: str
   average:
@@ -54,7 +54,7 @@ author:
 EXAMPLES = r"""
 - name: Collect disk data for all partitions from 06/02/2025 to 07/02/2025
   sar_info:
-    type: "Disk"
+    type: "disk"
     date_start: "06/02/2025"
     date_end: "07/02/2025"
     partition: true
@@ -62,28 +62,28 @@ EXAMPLES = r"""
 
 - name: Get all await values for centos-root device
   set_fact:
-    await_values: "{{ ansible_facts.sar_data.Disk | selectattr('DEV', 'equalto', 'centos-root') | map(attribute='await') | list }}"
+    await_values: "{{ ansible_facts.sar_data.disk | selectattr('DEV', 'equalto', 'centos-root') | map(attribute='await') | list }}"
 
-- name: Get CPU data between 08:00:00 and 12:00:00 for all stored days
+- name: Get cpu data between 08:00:00 and 12:00:00 for all stored days
   sar_info:
-    type: "CPU"
+    type: "cpu"
     time_start: "08:00:00"
     time_end: "12:00:00"
 
 - name: Fetch memory usage data for 07/02/2025
   sar_info:
-    type: "Memory"
+    type: "memory"
     date_start: "07/02/2025"
 
 - name: Get only average disk data for 06/02/2025
   sar_info:
-    type: "Disk"
+    type: "disk"
     date_start: "06/02/2025"
     average: true
 
 - name: Retrieve system load average for today
   sar_info:
-    type: "Load"
+    type: "load"
 
 """
 
@@ -100,7 +100,7 @@ ansible_facts:
       elements: dict
       sample:
         sar_data:
-          Disk:
+          disk:
             - date: "06/02/2025"
               time: "05:40:01"
               DEV: "centos-root"
@@ -148,12 +148,12 @@ def run_sar_command(module, sar_bin, sar_file, sar_type, time_start, time_end, p
     command = [sar_bin, "-f", sar_file]
 
     sar_flags = {
-        "CPU": ["-u"],
-        "Memory": ["-r"],
-        "Swap": ["-S"],
-        "Network": ["-n", "DEV"],
-        "Disk": ["-d", "-p"] if partition else ["-d"],
-        "Load": ["-q"],
+        "cpu": ["-u"],
+        "memory": ["-r"],
+        "swap": ["-S"],
+        "network": ["-n", "DEV"],
+        "disk": ["-d", "-p"] if partition else ["-d"],
+        "load": ["-q"],
     }
 
     if sar_type in sar_flags:
@@ -182,22 +182,22 @@ def parse_sar_output(output, sar_type, average, date_str):
         if not parts:
             continue
 
-        if sar_type == "CPU" and ("%user" in parts or "%usr" in parts):
+        if sar_type == "cpu" and ("%user" in parts or "%usr" in parts):
             headers = parts
             continue
-        elif sar_type == "Memory" and ("kbmemfree" in parts or "kbmemused" in parts):
+        elif sar_type == "memory" and ("kbmemfree" in parts or "kbmemused" in parts):
             headers = parts
             continue
-        elif sar_type == "Swap" and ("kbswpfree" in parts or "kbswpused" in parts):
+        elif sar_type == "swap" and ("kbswpfree" in parts or "kbswpused" in parts):
             headers = parts
             continue
-        elif sar_type == "Network" and ("IFACE" in parts or "rxpck/s" in parts):
+        elif sar_type == "network" and ("IFACE" in parts or "rxpck/s" in parts):
             headers = parts
             continue
-        elif sar_type == "Disk" and ("DEV" in parts or "tps" in parts):
+        elif sar_type == "disk" and ("DEV" in parts or "tps" in parts):
             headers = parts
             continue
-        elif sar_type == "Load" and ("runq-sz" in parts or "plist-sz" in parts):
+        elif sar_type == "load" and ("runq-sz" in parts or "plist-sz" in parts):
             headers = parts
             continue
 
@@ -233,7 +233,7 @@ def main():
         date_end=dict(type="str", required=False, default=None),
         time_start=dict(type="str", required=False, default=None),
         time_end=dict(type="str", required=False, default=None),
-        type=dict(type="str", required=True, choices=['CPU', 'Memory', 'Swap', 'Network', 'Disk', 'Load']),
+        type=dict(type="str", required=True, choices=['cpu', 'memory', 'swap', 'network', 'disk', 'load']),
         average=dict(type="bool", required=False, default=False),
         partition=dict(type="bool", required=False, default=False),
     )
