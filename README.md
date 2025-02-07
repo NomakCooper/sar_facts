@@ -18,7 +18,7 @@
 
 <b>sar_info</b> is an ansible custom module that creates and adds a new dict to ansible_facts
 * sar_data ( from [<code>sar</code>](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/4/html/introduction_to_system_administration/s3-resource-tools-sar-sar) command )
-  * TYPE ( data type collected **`CPU`**, **`Memory`**, **`Swap`**, **`Network`**, **`Disk`**, **`Load`**)
+  * TYPE ( data type collected **`cpu`**, **`memory`**, **`swap`**, **`network`**, **`disk`**, **`load`**)
     * date: date value ( data date collected )
     * time: time value ( data time collected )
     * key: value ( value from sar data )
@@ -39,13 +39,13 @@
 
 |**parameter**|**type**|**required**|**choices**|**default**|**description**|
 |:-|:-|:-|:-|:-|:-|
-|type|str|true|CPU, Load, Memory, Swap, Network, Disk|ND|collection category|
+|type|str|true|cpu, load, memory, swap, network, disk|ND|collection category|
 |date\_start|str|false|ND|None|collection start date format: **DD/MM/YYYY**|
 |date\_end|str|false|ND|None|collection end date format: **DD/MM/YYYY**|
 |time_start|str|false|ND|ND|collection start time format: **24H**|
 |time_end|str|false|ND|ND|collection end time format: **24H**|
 |average|bool|false|true,false|false|get only average data|
-|partition|bool|false|true,false|false|get Disk data by partition|
+|partition|bool|false|true,false|false|get disk data by partition|
 
 #### Attributes :
 
@@ -55,9 +55,9 @@
 |facts     |full   |Action returns an ansible_facts dictionary that will update existing host facts.    |
 
 #### Examples dict in ansible_facts :arrow_forward:
-#### CPU TYPE
+#### cpu TYPE
 ```json
-    "ansible_facts.sar_data.CPU": [
+    "ansible_facts.sar_data.cpu": [
         {
             "%idle": "99.84",
             "%iowait": "0.00",
@@ -66,15 +66,15 @@
             "%system": "0.07",
             "%user": "0.09",
             "AM": "AM",
-            "CPU": "all",
+            "cpu": "all",
             "date": "07/02/2025",
             "time": "04:10:01"
         }
     ]
 ```
-#### Load TYPE
+#### load TYPE
 ```json
-    "ansible_facts.sar_data.Load": [
+    "ansible_facts.sar_data.load": [
         {
             "AM": "AM",
             "blocked": "0",
@@ -88,9 +88,9 @@
         }
     ]
 ```
-#### Memory TYPE
+#### memory TYPE
 ```json
-    "ansible_facts.sar_data.Memory": [
+    "ansible_facts.sar_data.memory": [
         {
             "%commit": "7.24",
             "%memused": "81.82",
@@ -108,9 +108,9 @@
         }
     ]
 ```
-#### Swap TYPE
+#### swap TYPE
 ```json
-    "ansible_facts.sar_data.Swap": [
+    "ansible_facts.sar_data.swap": [
         {
             "%swpcad": "0.00",
             "%swpused": "0.00",
@@ -123,9 +123,9 @@
         }
     ]
 ```
-#### Network TYPE
+#### network TYPE
 ```json
-    "ansible_facts.sar_data.Network": [
+    "ansible_facts.sar_data.network": [
         {
             "AM": "AM",
             "IFACE": "enp0s3",
@@ -167,9 +167,9 @@
         }
     ]
 ```
-#### Disk TYPE
+#### disk TYPE
 ```json
-    "ansible_facts.sar_data.Disk": [
+    "ansible_facts.sar_data.disk": [
         {
             "%util": "0.01",
             "AM": "AM",
@@ -214,9 +214,9 @@
         }
     ]
 ```
-#### Disk TYPE Partitioned
+#### disk TYPE Partitioned
 ```json
-    "ansible_facts.sar_data.Disk": [
+    "ansible_facts.sar_data.disk": [
         {
             "%util": "0.01",
             "AM": "AM",
@@ -266,42 +266,42 @@
 ```yaml
 - name: Collect disk data for all partitions from 06/02/2025 to 07/02/2025
   sar_info:
-    type: "Disk"
+    type: "disk"
     date_start: "06/02/2025"
     date_end: "07/02/2025"
     partition: true
 ```
 ```yaml
-- name: Get CPU data between 08:00:00 and 12:00:00 for all stored days
+- name: Get cpu data between 08:00:00 and 12:00:00 for all stored days
   sar_info:
-    type: "CPU"
+    type: "cpu"
     time_start: "08:00:00"
     time_end: "12:00:00"
 ```
 ```yaml
 - name: Fetch memory usage data for 07/02/2025
   sar_info:
-    type: "Memory"
+    type: "memory"
     date_start: "07/02/2025"
 ```
 ```yaml
 - name: Get only average disk data for 06/02/2025
   sar_info:
-    type: "Disk"
+    type: "disk"
     date_start: "06/02/2025"
     average: true
 ```
 ```yaml
 - name: Retrieve system load average for today
   sar_info:
-    type: "Load"
+    type: "load"
 ```
 #### Filter data
 ```yaml
     - name: Extract all await values for centos-root ( from disk type partitioned )
       set_fact:
         root_await: >-
-          {{ ansible_facts.sar_data.Disk
+          {{ ansible_facts.sar_data.disk
             | selectattr('DEV', 'equalto', 'centos-root')
             | map(attribute='await')
             | list
@@ -311,7 +311,7 @@
     - name: Extract all rxpck/s values for enp0s3 net interface
       set_fact:
         enp0s3_rxpck: >-
-          {{ ansible_facts.sar_data.Network
+          {{ ansible_facts.sar_data.network
             | selectattr('IFACE', 'equalto', 'enp0s3')
             | map(attribute='rxpck/s')
             | list
