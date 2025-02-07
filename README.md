@@ -270,7 +270,6 @@
     date_start: "06/02/2025"
     date_end: "07/02/2025"
     partition: true
-    type: "Load"
 ```
 ```yaml
 - name: Get CPU data between 08:00:00 and 12:00:00 for all stored days
@@ -278,14 +277,12 @@
     type: "CPU"
     time_start: "08:00:00"
     time_end: "12:00:00"
-    type: "Load"
 ```
 ```yaml
 - name: Fetch memory usage data for 07/02/2025
   sar_info:
     type: "Memory"
     date_start: "07/02/2025"
-    type: "Load"
 ```
 ```yaml
 - name: Get only average disk data for 06/02/2025
@@ -293,7 +290,6 @@
     type: "Disk"
     date_start: "06/02/2025"
     average: true
-    type: "Load"
 ```
 ```yaml
 - name: Retrieve system load average for today
