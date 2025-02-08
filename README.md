@@ -16,12 +16,15 @@
 
 #### Description :information_source:
 
-<b>sar_facts</b> is an ansible custom module that creates and adds a new dict to ansible_facts
-* sar_data ( from [<code>sar</code>](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/4/html/introduction_to_system_administration/s3-resource-tools-sar-sar) command )
-  * TYPE ( data type collected **`cpu`**, **`memory`**, **`swap`**, **`network`**, **`disk`**, **`load`**)
-    * date: date value ( data date collected )
-    * time: time value ( data time collected )
-    * key: value ( value from sar data )
+<b>sar_facts</b> is an ansible custom module that creates and adds a new dict to ansible_facts based on type selected
+|fact name|type|
+|---------|----|
+|sar_cpu|cpu|
+|sar_load|load|
+|sar_mem|memory|
+|sar_swap|swap|
+|sar_net|network|
+|sar_disk|disk|
 
 #### Repo files :open_file_folder:
 
@@ -57,7 +60,7 @@
 #### Examples dict in ansible_facts :arrow_forward:
 #### cpu TYPE
 ```json
-    "ansible_facts.sar_data.cpu": [
+    "ansible_facts.sar_cpu": [
         {
             "%idle": "99.84",
             "%iowait": "0.00",
@@ -74,7 +77,7 @@
 ```
 #### load TYPE
 ```json
-    "ansible_facts.sar_data.load": [
+    "ansible_facts.sar_load": [
         {
             "AM": "AM",
             "blocked": "0",
@@ -90,7 +93,7 @@
 ```
 #### memory TYPE
 ```json
-    "ansible_facts.sar_data.memory": [
+    "ansible_facts.sar_mem": [
         {
             "%commit": "7.24",
             "%memused": "81.82",
@@ -110,7 +113,7 @@
 ```
 #### swap TYPE
 ```json
-    "ansible_facts.sar_data.swap": [
+    "ansible_facts.sar_swap": [
         {
             "%swpcad": "0.00",
             "%swpused": "0.00",
@@ -125,7 +128,7 @@
 ```
 #### network TYPE
 ```json
-    "ansible_facts.sar_data.network": [
+    "ansible_facts.sar_net": [
         {
             "AM": "AM",
             "IFACE": "enp0s3",
@@ -169,7 +172,7 @@
 ```
 #### disk TYPE
 ```json
-    "ansible_facts.sar_data.disk": [
+    "ansible_facts.sar_disk": [
         {
             "%util": "0.01",
             "AM": "AM",
@@ -216,7 +219,7 @@
 ```
 #### disk TYPE Partitioned
 ```json
-    "ansible_facts.sar_data.disk": [
+    "ansible_facts.sar_disk": [
         {
             "%util": "0.01",
             "AM": "AM",
