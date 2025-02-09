@@ -4,13 +4,10 @@
 # Copyright: (c) 2025 Marco Noce <nce.marco@gmail.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import annotations
-from ansible.module_utils.basic import AnsibleModule
-import os
-import subprocess
-import datetime
+from __future__ import absolute_import, division, print_function
+__metaclass__ = type
 
-DOCUMENTATION = r"""
+DOCUMENTATION = r'''
 ---
 module: sar_facts
 short_description: Collect system activity report (SAR) data for system performance monitoring.
@@ -52,7 +49,12 @@ options:
     default: false
 author:
   - Marco Noce (@NomakCooper)
-"""
+'''
+
+from ansible.module_utils.basic import AnsibleModule
+import os
+import subprocess
+import datetime
 
 SAR_LOG_PATHS = ["/var/log/sa/", "/var/log/sysstat/"]
 SAR_BIN_PATHS = ["/usr/bin/sar", "/usr/sbin/sar", "/bin/sar"]
