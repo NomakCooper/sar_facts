@@ -54,7 +54,7 @@ author:
 from ansible.module_utils.basic import AnsibleModule
 import os
 import subprocess
-import datetime
+from datetime import datetime, timedelta
 
 SAR_LOG_PATHS = ["/var/log/sa/", "/var/log/sysstat/"]
 SAR_BIN_PATHS = ["/usr/bin/sar", "/usr/sbin/sar", "/bin/sar"]
@@ -80,7 +80,7 @@ def locate_sar():
 def find_sar_file(date_str):
     """Finds the SAR log file for a given date."""
     try:
-        date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+        date_obj = datetime.strptime(date_str, "%Y-%m-%d")
         day = date_obj.strftime("%d")
 
         for path in SAR_LOG_PATHS:
@@ -121,6 +121,10 @@ def run_sar_command(module, sar_bin, sar_file, sar_type, time_start, time_end, p
     except subprocess.CalledProcessError as e:
         module.fail_json(msg=f"Failed to execute SAR command: {str(e)}")
 
+
+def convert_to_24h(time_str, am_pm):
+    """ Convert 12H time format to 24H format """
+    return datetime.strptime(f"{time_str} {am_pm}", '%I:%M:%S %p').strftime('%H:%M:%S')
 
 def parse_sar_output(output, sar_type, average, date_str):
     """Parses SAR output into structured data."""
@@ -164,6 +168,11 @@ def parse_sar_output(output, sar_type, average, date_str):
             continue
 
         time_str = parts[0] if not is_avg else "Average"
+        am_pm = parts[1] if not is_avg else ""
+
+        if am_pm in ["AM", "PM"]:
+            time_str = convert_to_24h(time_str, am_pm)
+            parts.pop(1)  # Remove AM/PM from parts
 
         data_entry = {
             "date": date_str,
@@ -204,14 +213,14 @@ def main():
 
     date_list = []
     if date_start and date_end:
-        start_date = datetime.datetime.strptime(date_start, "%Y-%m-%d")
-        end_date = datetime.datetime.strptime(date_end, "%Y-%m-%d")
+        start_date = datetime.strptime(date_start, "%Y-%m-%d")
+        end_date = datetime.strptime(date_end, "%Y-%m-%d")
         delta = (end_date - start_date).days
 
         if delta < 0:
             module.fail_json(msg="date_end cannot be before date_start.")
 
-        date_list = [(start_date + datetime.timedelta(days=i)).strftime("%Y-%m-%d") for i in range(delta + 1)]
+        date_list = [(start_date + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(delta + 1)]
     else:
         date_list = [date_start] if date_start else []
 
