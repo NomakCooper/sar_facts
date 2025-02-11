@@ -121,72 +121,54 @@ def run_sar_command(module, sar_bin, sar_file, sar_type, time_start, time_end, p
     except subprocess.CalledProcessError as e:
         module.fail_json(msg=f"Failed to execute SAR command: {str(e)}")
 
-
+# Aggiunta della funzione convert_to_24h per la conversione di orario 12H a 24H.
 def convert_to_24h(time_str, am_pm):
-    """ Convert 12H time format to 24H format """
-    return datetime.strptime(f"{time_str} {am_pm}", '%I:%M:%S %p').strftime('%H:%M:%S')
+    return datetime.strptime(f"{time_str} {am_pm}", "%I:%M:%S %p").strftime("%H:%M:%S")
 
 def parse_sar_output(output, sar_type, average, date_str):
-    """Parses SAR output into structured data."""
+    """Parses SAR output by finding the header line and converting the first two columns (TIME, AM/PM)
+    into 24H format. Il campo AM/PM viene preservato nel dizionario finale.
+    Vengono anche filtrate le righe che contengono 'Linux' o 'restart'."""
+    import re
     parsed_data = []
-    lines = output.splitlines()
-    headers = None
-    collect_avg = average
+    header = None
 
-    for line in lines:
+    def is_valid_time(token):
+        return re.match(r'^\d{1,2}:\d{2}:\d{2}$', token)
+
+    for line in output.splitlines():
+        # Filtra le righe che contengono "Linux" o "restart"
+        if re.search(r'\b(Linux|restart)\b', line, flags=re.IGNORECASE):
+            continue
+
         parts = line.split()
         if not parts:
             continue
 
-        if sar_type == "cpu" and ("%user" in parts or "%usr" in parts):
-            headers = parts
-            continue
-        elif sar_type == "memory" and ("kbmemfree" in parts or "kbmemused" in parts):
-            headers = parts
-            continue
-        elif sar_type == "swap" and ("kbswpfree" in parts or "kbswpused" in parts):
-            headers = parts
-            continue
-        elif sar_type == "network" and ("IFACE" in parts or "rxpck/s" in parts):
-            headers = parts
-            continue
-        elif sar_type == "disk" and ("DEV" in parts or "tps" in parts):
-            headers = parts
-            continue
-        elif sar_type == "load" and ("runq-sz" in parts or "plist-sz" in parts):
-            headers = parts
+        # Gestione del flag "Average:"
+        if parts[0] == "Average:":
+            parts = parts[1:]
+            if not average:
+                continue
+
+        # Se l'header non è definito, prendi la riga completa se inizia con orario valido
+        if header is None:
+            if len(parts) >= 2 and is_valid_time(parts[0]) and parts[1] in ["AM", "PM"]:
+                header = parts  # conserva l'intero header
             continue
 
-        if headers is None:
+        # Processa le righe dati: controlla se i primi due token sono orario e AM/PM
+        if len(parts) >= 2 and is_valid_time(parts[0]) and parts[1] in ["AM", "PM"]:
+            converted = convert_to_24h(parts[0], parts[1])
+            data_entry = {"date": date_str, "time": converted}
+            # Mappa i dati a partire dall'indice 1 del header (per preservare la colonna AM/PM)
+            for idx in range(1, min(len(header), len(parts))):
+                data_entry[header[idx]] = parts[idx]
+            parsed_data.append(data_entry)
+        else:
             continue
-
-        is_avg = parts[0] == "Average:"
-
-        if collect_avg and not is_avg:
-            continue
-        elif not collect_avg and is_avg:
-            continue
-
-        time_str = parts[0] if not is_avg else "Average"
-        am_pm = parts[1] if not is_avg else ""
-
-        if am_pm in ["AM", "PM"]:
-            time_str = convert_to_24h(time_str, am_pm)
-            parts.pop(1)  # Remove AM/PM from parts
-
-        data_entry = {
-            "date": date_str,
-            "time": time_str
-        }
-
-        for i, key in enumerate(headers[1:], start=1):
-            if i < len(parts):
-                data_entry[key] = parts[i]
-
-        parsed_data.append(data_entry)
 
     return parsed_data
-
 
 def main():
     """Main execution of the Ansible module."""
