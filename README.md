@@ -11,6 +11,11 @@
 
 </div>
 
+---
+
+> [!warning]
+> **This repository has been archived. The module is available via Ansible galaxy collection [nomakcooper.collection](https://galaxy.ansible.com/ui/repo/published/nomakcooper/collection/).**
+---
 ### sar_facts ansible custom module
 #### Collect system activity report (SAR) data for system performance monitoring by Ansible Module
 
